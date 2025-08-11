@@ -1,7 +1,7 @@
 #Multi Agent 
 * Run the main file to run the code(include OpenAI key in the env file first)
 * open swagger and there exists two routes
-* One is to the uuid for conversation level
+* One is to the generate uuid for conversation level
 * the Other one is for message agent
 -  **Message Agent**
   - used to get the chat history, query and conversation_id
