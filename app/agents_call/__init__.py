@@ -14,16 +14,16 @@ class Responder:
 
         async def drug_discovery(ctx: RunContext[str]):
 
-            return await call('drug_discovery', ctx.deps)
+            return await call('drug_discovery', ctx.deps, query)
 
 
         async def clinical_trail(ctx: RunContext[str]):
 
-            return  await call('clinical_trail', ctx.deps)
+            return  await call('clinical_trail', ctx.deps, query)
 
         async def drug_interaction(ctx: RunContext[str]):
 
-            return await call('drug_interaction', ctx.deps)
+            return await call('drug_interaction', ctx.deps, query)
 
         coordinate_agent = Agent(
             settings.MODEL,
