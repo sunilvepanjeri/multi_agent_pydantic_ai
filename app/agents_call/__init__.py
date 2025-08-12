@@ -1,5 +1,6 @@
 from pydantic_ai import Agent, RunContext, Tool
 from app.config import settings
+from app.agents_call.agents import AgentCall
 from typing import Any
 
 
@@ -8,38 +9,26 @@ class Responder:
 
     def __init__(self, prompts):
         self.prompt = prompts
-        self.drug_discovery_agent = Agent(settings.MODEL,system_prompt = self.prompt['drug_discovery_prompt'])
-        self.clinical_trail_agent = Agent(settings.MODEL,system_prompt = self.prompt['clinical_trail_prompt'])
-        self.drug_interaction_agent = Agent(settings.MODEL,system_prompt = self.prompt['drug_interaction_prompt'])
 
-    async def generate(self, query, history):
+    async def generate(self, call, query, chat_history):
 
-        async def drug_discovery(ctx: RunContext[None]) -> str:
-            try:
-                r = await self.drug_discovery_agent.run(query, deps = ctx.deps)
-                return str(r.output)
-            except Exception as e:
-                return e
+        async def drug_discovery(ctx: RunContext[str]):
+
+            return await call('drug_discovery', ctx.deps)
 
 
-        async def clinical_trail(ctx: RunContext[None]) -> str:
+        async def clinical_trail(ctx: RunContext[str]):
 
-            try:
-                r =  await self.clinical_trail_agent.run(query, deps = ctx.deps)
-                return str(r.output)
-            except Exception as e:
-                return e
+            return  await call('clinical_trail', ctx.deps)
 
-        async def drug_interaction(ctx: RunContext[None]) -> str:
+        async def drug_interaction(ctx: RunContext[str]):
 
-            try:
-                r =  await self.drug_interaction_agent.run(query, deps = ctx.deps)
-                return str(r.output)
-            except Exception as e:
-                return e
+            return await call('drug_interaction', ctx.deps)
+
         coordinate_agent = Agent(
             settings.MODEL,
             deps_type = list[dict],
+            output_type = str,
             tools=[
                 Tool(drug_discovery, takes_ctx = True),
                 Tool(clinical_trail, takes_ctx = True),
@@ -47,12 +36,12 @@ class Responder:
             system_prompt=self.prompt['coordinate_agent_prompt']
         )
 
-        if len(history) > 1:
+        if len(chat_history) > 1:
             @coordinate_agent.system_prompt
             async def coordinate_agent_prompt(ctx: RunContext[list[dict]]) -> str:
                 return str(ctx.deps)
         try:
-            answer = await coordinate_agent.run(query, deps = history)
+            answer = await coordinate_agent.run(query, deps = chat_history)
         except Exception as e:
             return e
 
@@ -65,8 +54,7 @@ class Responder:
 
     async def __call__(self, query, chat_history):
 
+        call = AgentCall(self.prompt)
 
-        final_value = await self.generate(query, chat_history)
-
-        return final_value
+        return  await self.generate(call, query, chat_history)
 
